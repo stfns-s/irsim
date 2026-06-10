@@ -67,6 +67,14 @@ extern void EnableInput( /* */ );
 extern void DisableAnalyzer( /* */ );
 extern void EnableAnalyzer( /* */ );
 extern void TerminateAnalyzer( /* */ );
+extern void WindowResize( /*  ev */ );
+extern void WindowExposed( /*  event */ );
+extern void HandleButton( /*  ev */ );
+extern void HandleKey( /*  ev */ );
+
+	/* EXPORTS FROM thread.c */
+
+extern int xloop_create( /* */ );
 
 	/* EXPORTS FROM defaults.c */
 

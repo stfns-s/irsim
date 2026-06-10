@@ -11,12 +11,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>  /* for offsetof() */
 
 #ifdef LINUX
 #include <string.h>  /* for strncmp() */
 #endif
 
 #include <tk.h>
+
+/* Tcl version 9 compatibility */
+#if TCL_MAJOR_VERSION < 9
+typedef int Tcl_Size;
+#endif
 
 #include "ana.h"
 #include "ana_glob.h"
@@ -29,8 +35,11 @@
   #endif
 #endif
 
-/* Internal routine used---need to find an alternative! */
+/* Tk 9 exposes the formerly-internal TkpUseWindow as the public Tk_UseWindow. */
+#if TK_MAJOR_VERSION < 9
 extern int TkpUseWindow();
+#define Tk_UseWindow TkpUseWindow
+#endif
 
 /*
  * A data structure of the following type is kept for each
@@ -75,19 +84,19 @@ typedef struct {
 
 static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_COLOR, "-background", "background", "Background",
-	"Black", Tk_Offset(TkAnalyzer, background), 0},
+	"Black", offsetof(TkAnalyzer, background), 0},
     {TK_CONFIG_SYNONYM, "-bg", "background", (char *)NULL,
 	(char *)NULL, 0, 0},
     {TK_CONFIG_PIXELS, "-height", "height", "Height",
-	"0", Tk_Offset(TkAnalyzer, height), 0},
+	"0", offsetof(TkAnalyzer, height), 0},
     {TK_CONFIG_PIXELS, "-width", "width", "Width",
-	"0", Tk_Offset(TkAnalyzer, width), 0},
+	"0", offsetof(TkAnalyzer, width), 0},
     {TK_CONFIG_STRING, "-use", "use", "Use",
-	"", Tk_Offset(TkAnalyzer, useThis), TK_CONFIG_NULL_OK},
+	"", offsetof(TkAnalyzer, useThis), TK_CONFIG_NULL_OK},
     {TK_CONFIG_STRING, "-exitproc", "exitproc", "ExitProc",
-	"", Tk_Offset(TkAnalyzer, exitProc), TK_CONFIG_NULL_OK},
+	"", offsetof(TkAnalyzer, exitProc), TK_CONFIG_NULL_OK},
     {TK_CONFIG_STRING, "-data", "data", "Data",
-	"", Tk_Offset(TkAnalyzer, mydata), TK_CONFIG_NULL_OK},
+	"", offsetof(TkAnalyzer, mydata), TK_CONFIG_NULL_OK},
     {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL,
 	(char *) NULL, 0, 0}
 };
@@ -96,16 +105,15 @@ static Tk_ConfigSpec configSpecs[] = {
  * Forward declarations for procedures defined later in this file:
  */
 
-static int		ConfigureTkAnalyzer _ANSI_ARGS_((Tcl_Interp *interp,
+static int		ConfigureTkAnalyzer(Tcl_Interp *interp,
 			    TkAnalyzer *analyzerPtr, int objc, Tcl_Obj *const objv[],
-			    int flags));
-static void		DestroyTkAnalyzer _ANSI_ARGS_((char *memPtr));
-static void		TkAnalyzerCmdDeletedProc _ANSI_ARGS_((
-			    ClientData clientData));
-static void		TkAnalyzerEventProc _ANSI_ARGS_((ClientData clientData,
-			    XEvent *eventPtr));
-static int		AnalyzerWidgetObjCmd _ANSI_ARGS_((ClientData clientData,
-			    Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]));
+			    int flags);
+static void		DestroyTkAnalyzer(char *memPtr);
+static void		TkAnalyzerCmdDeletedProc(ClientData clientData);
+static void		TkAnalyzerEventProc(ClientData clientData,
+			    XEvent *eventPtr);
+static int		AnalyzerWidgetObjCmd(ClientData clientData,
+			    Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]);
 
 
 /*
@@ -134,12 +142,17 @@ TkAnalyzerObjCmd(clientData, interp, objc, objv)
     int objc;			/* Number of arguments. */
     Tcl_Obj *const objv[];	/* Argument objects. */
 {
-    Tk_Window tkwin = (Tk_Window) clientData;
+    /* Fetch the main window live rather than from clientData: the	*/
+    /* "tkanalyzer" command is registered at extension load time, which	*/
+    /* (with lazy Tk init) can precede Tk_Init, so the clientData main	*/
+    /* window may have been NULL.  By the time a widget is created, Tk	*/
+    /* is loaded and Tk_MainWindow() is valid.				*/
+    Tk_Window tkwin = Tk_MainWindow(interp);
     TkAnalyzer *analyzerPtr;
-    Tk_Window new;
+    Tk_Window new = NULL;
     char *arg, *useOption;
     int i, c;
-    size_t length;
+    Tcl_Size length;
     unsigned int mask;
 
     if (objc < 2) {
@@ -156,7 +169,7 @@ TkAnalyzerObjCmd(clientData, interp, objc, objv)
 
     useOption = NULL;
     for (i = 2; i < objc; i += 2) {
-	arg = Tcl_GetStringFromObj(objv[i], (int *) &length);
+	arg = Tcl_GetStringFromObj(objv[i], &length);
 	if (length < 2) {
 	    continue;
 	}
@@ -182,7 +195,7 @@ TkAnalyzerObjCmd(clientData, interp, objc, objv)
 	useOption = (char *)Tk_GetOption(new, "use", "Use");
     }
     if (useOption != NULL) {
-	if (TkpUseWindow(interp, new, useOption) != TCL_OK) {
+	if (Tk_UseWindow(interp, new, useOption) != TCL_OK) {
 	    goto error;
 	}
     }
@@ -266,7 +279,7 @@ AnalyzerWidgetObjCmd(clientData, interp, objc, objv)
     register TkAnalyzer *analyzerPtr = (TkAnalyzer *) clientData;
     int result = TCL_OK, idx;
     int c, i;
-    size_t length;
+    Tcl_Size length;
     Tcl_Obj *robj;
 
     if (objc < 2) {
@@ -305,7 +318,7 @@ AnalyzerWidgetObjCmd(clientData, interp, objc, objv)
 		    (char *) analyzerPtr, Tcl_GetString(objv[2]), 0);
 	} else {
 	    for (i = 2; i < objc; i++) {
-		char *arg = Tcl_GetStringFromObj(objv[i], (int *) &length);
+		char *arg = Tcl_GetStringFromObj(objv[i], &length);
 		if (length < 2) {
 		    continue;
 		}
@@ -412,7 +425,13 @@ ConfigureTkAnalyzer(interp, analyzerPtr, objc, objv, flags)
     int flags;			/* Flags to pass to Tk_ConfigureWidget. */
 {
     if (Tk_ConfigureWidget(interp, analyzerPtr->tkwin, configSpecs,
-	    objc, (const char **) objv, (char *) analyzerPtr,
+	    objc,
+#if TK_MAJOR_VERSION < 9
+	    (const char **) objv,
+#else
+	    objv,
+#endif
+	    (char *) analyzerPtr,
 	    flags | TK_CONFIG_OBJS) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -476,7 +495,8 @@ TkAnalyzerEventProc(clientData, eventPtr)
 		analyzerPtr->tkwin = NULL;
         	Tcl_DeleteCommandFromToken(analyzerPtr->interp, analyzerPtr->widgetCmd);
 	    }
-	    Tcl_EventuallyFree((ClientData) analyzerPtr, DestroyTkAnalyzer);
+	    Tcl_EventuallyFree((ClientData) analyzerPtr,
+		    (Tcl_FreeProc *) DestroyTkAnalyzer);
 	    analyzerON = FALSE;
 	    break;
 

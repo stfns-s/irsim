@@ -17,6 +17,7 @@
  *
  */
 #include <stdio.h>
+#include <stdlib.h>   /* for atoi() */
 #include <string.h>   /* for strlen() */
 #include "ana.h"
 #include <X11/Xutil.h>

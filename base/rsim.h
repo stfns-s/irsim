@@ -114,4 +114,15 @@ extern int  expand();
 extern int  input();
 extern void shift_args();
 
+#ifndef TCL_IRSIM
+	/* the Tcl build (tclirsim.c) has its own static finput() */
+extern int  finput();
+#endif
+extern void InitCmdPath();
+extern void init_commands();
+
+	/* analyzer display locking, used under HAVE_PTHREADS (see event.c) */
+extern void EnableInput();
+extern void DisableInput();
+
 #endif /* _RSIM_H */

@@ -5,8 +5,11 @@
 /* This file mainly lifted from the main application routine for	*/
 /* "wish" from the Tk distribution.					*/
 /*									*/
-/* This is a compact re-write of the "wish" executable that calls	*/
-/* Tk_MainEx with application-specific processing.  Specifically, 	*/
+/* This is a compact re-write of the "tclsh" executable that calls	*/
+/* Tcl_Main with application-specific processing.  Specifically,	*/
+/* Tk is NOT initialized here; it loads lazily via "package require	*/
+/* Tk" only when a GUI feature (the analyzer) is first used, so that	*/
+/* -noconsole mode runs headless with no DISPLAY.			*/
 /* "wish" doesn't allow the startup script (~/.wishrc) to be renamed.	*/
 /* However, for irsim running as an extension of Tcl, we want to source	*/
 /* the irsim.tcl file instead of ~/.wishrc.  So, all this file really	*/
@@ -50,10 +53,11 @@ irsim_AppInit(interp)
     if (Tcl_Init(interp) == TCL_ERROR) {
 	return TCL_ERROR;
     }
-    if (Tk_Init(interp) == TCL_ERROR) {
-	return TCL_ERROR;
-    }
-    Tcl_StaticPackage(interp, "Tk", Tk_Init, Tk_SafeInit);
+    /* Register Tk as a statically-linked package, but with a NULL	*/
+    /* interp so it is NOT marked already-loaded.  This lets a later	*/
+    /* "load {} Tk" actually run Tk_Init on demand (the analyzer),	*/
+    /* instead of being skipped as already present.			*/
+    Tcl_StaticPackage(NULL, "Tk", Tk_Init, Tk_SafeInit);
 
     /* This is where we replace the home ".wishrc" file with	*/
     /* irsim's startup script.					*/
@@ -71,7 +75,7 @@ main(argc, argv)
    int argc;
    char **argv;
 {
-    Tk_Main(argc, argv, irsim_AppInit);
+    Tcl_Main(argc, argv, irsim_AppInit);
     return 0;
 }
 

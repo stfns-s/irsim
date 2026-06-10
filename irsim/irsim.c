@@ -40,8 +40,7 @@ public void Usage( msg, s1 )
 
 /* Main routine for irsim */
 
-public main( argc, argv )
-   char *argv[];
+int main( int argc, char *argv[] )
   {
     int  i, arg1, has_param_file;
 

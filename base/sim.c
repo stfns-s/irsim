@@ -996,7 +996,7 @@ private int input_sim (simfile, has_param_file)
 		break;
 
 	    case 'r':
-		newtrans(RESIST, 2, targc, targv);
+		newtrans(RESIST, RESIST, targc, targv);
 		break;
 
 	    case 'x':

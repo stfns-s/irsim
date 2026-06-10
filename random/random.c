@@ -85,6 +85,11 @@
 
 #include <tcl.h>
 
+/* Tcl version 9 compatibility */
+#if TCL_MAJOR_VERSION < 9
+typedef int Tcl_Size;
+#endif
+
 /*--------------------------------------------------------------*/
 /* return a sample from a unit normal distribution 		*/
 /*--------------------------------------------------------------*/
@@ -293,7 +298,7 @@ int do_random(ClientData cl, Tcl_Interp *interp, int argc, char *argv[])
 	    return TCL_ERROR;
 	}
 	else {
-	    int list_count;
+	    Tcl_Size list_count;
 	    char **list;
 
 	    if (Tcl_SplitList(interp, argv[3], &list_count,
@@ -307,7 +312,7 @@ int do_random(ClientData cl, Tcl_Interp *interp, int argc, char *argv[])
 	}
     }
     else if (strcmp(argv[1], "-permute") == 0) {
-	int list_count;
+	Tcl_Size list_count;
 	char *t;
 	char **list;
 
@@ -378,7 +383,7 @@ int do_random(ClientData cl, Tcl_Interp *interp, int argc, char *argv[])
 	    return TCL_ERROR;
 	}
 	else {
-	    int list_count;
+	    Tcl_Size list_count;
 	    char *t;
 	    char **list;
 

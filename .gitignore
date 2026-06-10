@@ -1,4 +1,6 @@
-irsim
+/irsim/irsim
+/irsim/gentbl
+/irsim/genspktbl
 irsimexec
 defs.mak
 Depend
@@ -8,6 +10,7 @@ config.log
 scripts/defs.mak
 scripts/config.log
 scripts/config.status
+scripts/autom4te.cache
 make.log
 install.log
 *.o

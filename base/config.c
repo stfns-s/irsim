@@ -298,10 +298,13 @@ again:
     device_names = (DevRec **)malloc(sizeof(DevRec *));
     device_names[0] = (DevRec *)NULL;
 
-    /* Insert default devices */
-    makedevice("nfet", "n-channel", (float)0.0);
-    makedevice("pfet", "p-channel", (float)0.0);
-    makedevice("resistor", "resistor", (float)0.0);
+    /* Insert default devices.  The array index must match the implant	*/
+    /* enum used as t->ttype, since transistors are looked up as		*/
+    /* device_names[t->ttype]: NCHAN=0, PCHAN=1, DEP=2, RESIST=3.	*/
+    makedevice("nfet", "n-channel", (float)0.0);	/* NCHAN  = 0 */
+    makedevice("pfet", "p-channel", (float)0.0);	/* PCHAN  = 1 */
+    makedevice("resistor", "resistor", (float)0.0);	/* DEP    = 2 */
+    makedevice("resistor", "resistor", (float)0.0);	/* RESIST = 3 */
 
     while( fgetline( line, LSIZE, cfile ) != NULL )
       {

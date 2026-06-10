@@ -262,6 +262,14 @@ set RsimOpts(step) 100.0
 set RsimOpts(sstep) 1000.0
 set RsimOpts(base) 0
 
+proc irsim::gui_ready {} {
+   expr {[info exists ::irsim::gui_built] && $::irsim::gui_built}
+}
+
+proc irsim::build_gui {} {
+   if {[irsim::gui_ready]} return
+   load {} Tk
+   wm withdraw .
 toplevel .analyzer
 wm geometry .analyzer 800x350+50+50
 wm protocol .analyzer WM_DELETE_WINDOW {wm withdraw .analyzer}
@@ -390,6 +398,130 @@ bind $c <Button-1> {irsim::center_slider %x}
 bind $c <B1-Motion> {irsim::center_slider %x}
 bind $c <Button-3> {irsim::grab_slider %x}
 bind $c <B3-Motion> {irsim::resize_slider %x}
+pack .analyzer.scope.lbuttons.left -side right
+pack .analyzer.scope.lbuttons.lleft -side right
+pack .analyzer.scope.lbuttons.center -side right
+pack .analyzer.scope.rbuttons.right -side left
+pack .analyzer.scope.rbuttons.rright -side left
+
+grid .analyzer.scope.time0 -row 0 -column 0 -sticky news
+grid .analyzer.scope.time1 -row 0 -column 1 -sticky news
+grid .analyzer.scope.time2 -row 0 -column 2 -sticky news
+grid .analyzer.scope.names -row 1 -column 0 -sticky news
+grid .analyzer.scope.display -row 1 -column 1 -sticky news
+grid .analyzer.scope.values -row 1 -column 2 -sticky news
+grid .analyzer.scope.lbuttons -row 2 -column 0 -sticky news
+grid .analyzer.scope.scrollx -row 2 -column 1 -sticky news
+grid .analyzer.scope.rbuttons -row 2 -column 2 -sticky news
+# Button callback for marker
+bind .analyzer.scope.display <Button-2> \
+	{marker off ; .analyzer.scope.time1 configure -text ""; irsim::no_values}
+bind .analyzer.scope.display <Button-1> \
+	{if {%x > 0} {marker set [trace cursor %y] [simtime cursor %x];\
+	irsim::update_times; irsim::update_values}}
+bind .analyzer.scope.display <B1-Motion> \
+	{if {%x > 0} {marker set [trace cursor %y] [simtime cursor %x];\
+	irsim::update_times; irsim::update_values}}
+bind .analyzer.scope.display <ButtonPress-3> \
+	{if {%x > 0} {marker 2 move [simtime cursor %x]; irsim::update_times}}
+bind .analyzer.scope.display <B3-Motion> \
+	{if {%x > 0} {marker 2 move [simtime cursor %x]; irsim::update_times}}
+bind .analyzer.scope.display <ButtonRelease-3> \
+	{if {%x > 0} {marker 2 off; irsim::update_times}}
+bind .analyzer.scope.display <B3-Key-z> {irsim::zoom_to_delta}
+
+bind .analyzer.scope.display <Left>  {simtime move -$RsimOpts(step)}
+bind .analyzer.scope.display <Right> {simtime move +$RsimOpts(step)}
+bind .analyzer.scope.display <Shift-Key-Left>  {simtime move -$RsimOpts(sstep)}
+bind .analyzer.scope.display <Shift-Key-Right> {simtime move +$RsimOpts(sstep)}
+bind .analyzer.scope.display <Key-z> {zoom out}
+bind .analyzer.scope.display <Key-Z> {zoom in}
+bind .analyzer.scope.display <Key-v> \
+	{simtime left [simtime begin]; simtime right [simtime end]}
+
+bind .analyzer.scope.display <Enter> {focus %W}
+bind .analyzer.scope <Configure> { \
+	update idletasks; irsim::update_traces; \
+	update idletasks; irsim::update_slider}
+
+wm withdraw .analyzer
+.analyzer.scope.display init	;# force mapping of window
+toplevel .nodelist
+frame .nodelist.freenodes
+frame .nodelist.usednodes
+frame .nodelist.freevectors
+frame .nodelist.usedvectors
+listbox .nodelist.freenodes.list \
+	-yscrollcommand {.nodelist.freenodes.sbar set}
+scrollbar .nodelist.freenodes.sbar -width 10 -orient vertical \
+	-command {.nodelist.freenodes.list yview}
+listbox .nodelist.usednodes.list \
+	-yscrollcommand {.nodelist.usednodes.sbar set}
+scrollbar .nodelist.usednodes.sbar -width 10 -orient vertical \
+	-command {.nodelist.usednodes.list yview}
+listbox .nodelist.freevectors.list \
+	-yscrollcommand {.nodelist.freevectors.sbar set}
+scrollbar .nodelist.freevectors.sbar -width 10 -orient vertical \
+	-command {.nodelist.freevectors.list yview}
+listbox .nodelist.usedvectors.list \
+	-yscrollcommand {.nodelist.usedvectors.sbar set}
+scrollbar .nodelist.usedvectors.sbar -width 10 -orient vertical \
+	-command {.nodelist.usedvectors.list yview}
+label .nodelist.freenodes.title -text "Nodes"
+label .nodelist.usednodes.title -text "Nodes in Analyzer"
+label .nodelist.freevectors.title -text "Vectors"
+label .nodelist.usedvectors.title -text "Vectors in Analyzer"
+
+pack .nodelist.freenodes.title -side top
+pack .nodelist.freenodes.list -side left -expand true -fill both
+pack .nodelist.freenodes.sbar -side right -fill y
+pack .nodelist.usednodes.title -side top
+pack .nodelist.usednodes.list -side left -expand true -fill both
+pack .nodelist.usednodes.sbar -side right -fill y
+pack .nodelist.freevectors.title -side top
+pack .nodelist.freevectors.list -side left -expand true -fill both
+pack .nodelist.freevectors.sbar -side right -fill y
+pack .nodelist.usedvectors.title -side top
+pack .nodelist.usedvectors.list -side left -expand true -fill both
+pack .nodelist.usedvectors.sbar -side right -fill y
+
+label .nodelist.title -text "IRSIM node and vector lists"
+frame .nodelist.bbar
+button .nodelist.bbar.close -text "Close" -command {wm withdraw .nodelist}
+pack .nodelist.bbar.close -side bottom -padx 5 -pady 5
+
+grid .nodelist.title -row 0 -column 0 -columnspan 2 -sticky news
+grid .nodelist.freenodes -row 1 -column 0 -sticky news
+grid .nodelist.usednodes -row 1 -column 1 -sticky news
+grid .nodelist.freevectors -row 2 -column 0 -sticky news
+grid .nodelist.usedvectors -row 2 -column 1 -sticky news
+grid .nodelist.bbar -row 3 -column 0 -columnspan 2 -sticky news
+
+grid columnconfigure .nodelist 0 -weight 1
+grid columnconfigure .nodelist 1 -weight 1
+grid rowconfigure .nodelist 1 -weight 1
+grid rowconfigure .nodelist 2 -weight 1
+
+bind .nodelist.freenodes.list <ButtonRelease-1> {irsim::pushnode %y}
+bind .nodelist.usednodes.list <ButtonRelease-1> {irsim::popnode %y}
+bind .nodelist.freevectors.list <ButtonRelease-1> {irsim::pushvector %y}
+bind .nodelist.usedvectors.list <ButtonRelease-1> {irsim::popvector %y}
+wm withdraw .nodelist
+toplevel .irsimprompt
+label .irsimprompt.message -anchor w
+pack .irsimprompt.message -side top -expand true -fill x -padx 10 -pady 5
+entry .irsimprompt.entry -width 40 -background white
+pack .irsimprompt.entry -side top -padx 10
+frame .irsimprompt.buttons
+button .irsimprompt.buttons.cancel -text "Cancel" -command {wm withdraw .irsimprompt}
+button .irsimprompt.buttons.okay -text "Okay"
+pack .irsimprompt.buttons.cancel -side left
+pack .irsimprompt.buttons.okay -side right
+pack .irsimprompt.buttons -side bottom -expand true -fill x -padx 10 -pady 5
+bind .irsimprompt.entry <Return> {.irsimprompt.buttons.okay invoke}
+wm withdraw .irsimprompt
+   set ::irsim::gui_built 1
+}
 
 # Callback function for Print->Title menu button
 
@@ -413,6 +545,7 @@ proc irsim::set_scrollsstep {value} {
 }
 
 proc irsim::update_slider {} {
+   if {![irsim::gui_ready]} return
    set a [simtime begin]
    set b [simtime end]
    set w [.analyzer.scope.display width]
@@ -493,23 +626,8 @@ proc irsim::center_slider {x} {
    }
 }
 
-pack .analyzer.scope.lbuttons.left -side right
-pack .analyzer.scope.lbuttons.lleft -side right
-pack .analyzer.scope.lbuttons.center -side right
-pack .analyzer.scope.rbuttons.right -side left
-pack .analyzer.scope.rbuttons.rright -side left
-
-grid .analyzer.scope.time0 -row 0 -column 0 -sticky news
-grid .analyzer.scope.time1 -row 0 -column 1 -sticky news
-grid .analyzer.scope.time2 -row 0 -column 2 -sticky news
-grid .analyzer.scope.names -row 1 -column 0 -sticky news
-grid .analyzer.scope.display -row 1 -column 1 -sticky news
-grid .analyzer.scope.values -row 1 -column 2 -sticky news
-grid .analyzer.scope.lbuttons -row 2 -column 0 -sticky news
-grid .analyzer.scope.scrollx -row 2 -column 1 -sticky news
-grid .analyzer.scope.rbuttons -row 2 -column 2 -sticky news
-
 proc irsim::UpdateAnalyzer {args} {
+   irsim::build_gui
    # puts stderr "UpdateAnalyzer $args level [info level]"
    if {[wm state .analyzer] == "withdrawn"} {
       wm deiconify .analyzer
@@ -524,39 +642,6 @@ proc irsim::UpdateAnalyzer {args} {
    irsim::update_nodelist
 }
 
-# Button callback for marker
-bind .analyzer.scope.display <Button-2> \
-	{marker off ; .analyzer.scope.time1 configure -text ""; irsim::no_values}
-bind .analyzer.scope.display <Button-1> \
-	{if {%x > 0} {marker set [trace cursor %y] [simtime cursor %x];\
-	irsim::update_times; irsim::update_values}}
-bind .analyzer.scope.display <B1-Motion> \
-	{if {%x > 0} {marker set [trace cursor %y] [simtime cursor %x];\
-	irsim::update_times; irsim::update_values}}
-bind .analyzer.scope.display <ButtonPress-3> \
-	{if {%x > 0} {marker 2 move [simtime cursor %x]; irsim::update_times}}
-bind .analyzer.scope.display <B3-Motion> \
-	{if {%x > 0} {marker 2 move [simtime cursor %x]; irsim::update_times}}
-bind .analyzer.scope.display <ButtonRelease-3> \
-	{if {%x > 0} {marker 2 off; irsim::update_times}}
-bind .analyzer.scope.display <B3-Key-z> {irsim::zoom_to_delta}
-
-bind .analyzer.scope.display <Left>  {simtime move -$RsimOpts(step)}
-bind .analyzer.scope.display <Right> {simtime move +$RsimOpts(step)}
-bind .analyzer.scope.display <Shift-Key-Left>  {simtime move -$RsimOpts(sstep)}
-bind .analyzer.scope.display <Shift-Key-Right> {simtime move +$RsimOpts(sstep)}
-bind .analyzer.scope.display <Key-z> {zoom out}
-bind .analyzer.scope.display <Key-Z> {zoom in}
-bind .analyzer.scope.display <Key-v> \
-	{simtime left [simtime begin]; simtime right [simtime end]}
-
-bind .analyzer.scope.display <Enter> {focus %W}
-bind .analyzer.scope <Configure> { \
-	update idletasks; irsim::update_traces; \
-	update idletasks; irsim::update_slider}
-
-wm withdraw .analyzer
-.analyzer.scope.display init	;# force mapping of window
 irsim::tag analyzer {irsim::UpdateAnalyzer %N}
 irsim::tag ana {irsim::UpdateAnalyzer %N}
 
@@ -570,6 +655,7 @@ irsim::tag zoom {irsim::update_all}
 irsim::tag trace {irsim::trace_callback %1 %2}
 
 proc irsim::trace_callback {option {name {}}} {
+   if {![irsim::gui_ready]} return
    global RsimOpts
    if {$option == "select"} {
       set tl [trace list all]
@@ -641,6 +727,7 @@ proc irsim::update_if_base_change {{option {}}} {
 }
 
 proc irsim::update_times {} {
+   if {![irsim::gui_ready]} return
    .analyzer.scope.time0 configure -text [format "%0.2f" \
 	[simtime left]]
    set tmarker [simtime marker]
@@ -658,6 +745,7 @@ proc irsim::update_times {} {
 }
 
 proc irsim::update_traces {} {
+   if {![irsim::gui_ready]} return
    set tl [trace list all]
    set minv 0
    set minn 0
@@ -712,6 +800,7 @@ proc irsim::update_traces {} {
 }
 
 proc irsim::update_values {} {
+   if {![irsim::gui_ready]} return
    set tl [trace list all]
    foreach tr $tl {
       set tr2 [string map {. #} $tr]
@@ -737,67 +826,6 @@ proc irsim::no_values {} {
 #----------------------------------
 # Node list window setup
 #----------------------------------
-
-toplevel .nodelist
-frame .nodelist.freenodes
-frame .nodelist.usednodes
-frame .nodelist.freevectors
-frame .nodelist.usedvectors
-listbox .nodelist.freenodes.list \
-	-yscrollcommand {.nodelist.freenodes.sbar set}
-scrollbar .nodelist.freenodes.sbar -width 10 -orient vertical \
-	-command {.nodelist.freenodes.list yview}
-listbox .nodelist.usednodes.list \
-	-yscrollcommand {.nodelist.usednodes.sbar set}
-scrollbar .nodelist.usednodes.sbar -width 10 -orient vertical \
-	-command {.nodelist.usednodes.list yview}
-listbox .nodelist.freevectors.list \
-	-yscrollcommand {.nodelist.freevectors.sbar set}
-scrollbar .nodelist.freevectors.sbar -width 10 -orient vertical \
-	-command {.nodelist.freevectors.list yview}
-listbox .nodelist.usedvectors.list \
-	-yscrollcommand {.nodelist.usedvectors.sbar set}
-scrollbar .nodelist.usedvectors.sbar -width 10 -orient vertical \
-	-command {.nodelist.usedvectors.list yview}
-label .nodelist.freenodes.title -text "Nodes"
-label .nodelist.usednodes.title -text "Nodes in Analyzer"
-label .nodelist.freevectors.title -text "Vectors"
-label .nodelist.usedvectors.title -text "Vectors in Analyzer"
-
-pack .nodelist.freenodes.title -side top
-pack .nodelist.freenodes.list -side left -expand true -fill both
-pack .nodelist.freenodes.sbar -side right -fill y
-pack .nodelist.usednodes.title -side top
-pack .nodelist.usednodes.list -side left -expand true -fill both
-pack .nodelist.usednodes.sbar -side right -fill y
-pack .nodelist.freevectors.title -side top
-pack .nodelist.freevectors.list -side left -expand true -fill both
-pack .nodelist.freevectors.sbar -side right -fill y
-pack .nodelist.usedvectors.title -side top
-pack .nodelist.usedvectors.list -side left -expand true -fill both
-pack .nodelist.usedvectors.sbar -side right -fill y
-
-label .nodelist.title -text "IRSIM node and vector lists"
-frame .nodelist.bbar
-button .nodelist.bbar.close -text "Close" -command {wm withdraw .nodelist}
-pack .nodelist.bbar.close -side bottom -padx 5 -pady 5
-
-grid .nodelist.title -row 0 -column 0 -columnspan 2 -sticky news
-grid .nodelist.freenodes -row 1 -column 0 -sticky news
-grid .nodelist.usednodes -row 1 -column 1 -sticky news
-grid .nodelist.freevectors -row 2 -column 0 -sticky news
-grid .nodelist.usedvectors -row 2 -column 1 -sticky news
-grid .nodelist.bbar -row 3 -column 0 -columnspan 2 -sticky news
-
-grid columnconfigure .nodelist 0 -weight 1
-grid columnconfigure .nodelist 1 -weight 1
-grid rowconfigure .nodelist 1 -weight 1
-grid rowconfigure .nodelist 2 -weight 1
-
-bind .nodelist.freenodes.list <ButtonRelease-1> {irsim::pushnode %y}
-bind .nodelist.usednodes.list <ButtonRelease-1> {irsim::popnode %y}
-bind .nodelist.freevectors.list <ButtonRelease-1> {irsim::pushvector %y}
-bind .nodelist.usedvectors.list <ButtonRelease-1> {irsim::popvector %y}
 
 proc irsim::pushnode {y} {
    set p_idx [.nodelist.freenodes.list nearest $y]
@@ -831,9 +859,8 @@ proc irsim::popvector {y} {
    trace remove $p_key
 }
 
-wm withdraw .nodelist
-
 proc irsim::update_nodelist {{state {}}} {
+   if {![irsim::gui_ready]} return
    if {$state != "force"} {
       if {[wm state .nodelist] == "withdrawn"} {return}
    }
@@ -874,21 +901,8 @@ proc irsim::update_nodelist {{state {}}} {
 # User prompt window setup
 #----------------------------------
 
-toplevel .irsimprompt
-label .irsimprompt.message -anchor w
-pack .irsimprompt.message -side top -expand true -fill x -padx 10 -pady 5
-entry .irsimprompt.entry -width 40 -background white
-pack .irsimprompt.entry -side top -padx 10
-frame .irsimprompt.buttons
-button .irsimprompt.buttons.cancel -text "Cancel" -command {wm withdraw .irsimprompt}
-button .irsimprompt.buttons.okay -text "Okay"
-pack .irsimprompt.buttons.cancel -side left
-pack .irsimprompt.buttons.okay -side right
-pack .irsimprompt.buttons -side bottom -expand true -fill x -padx 10 -pady 5
-bind .irsimprompt.entry <Return> {.irsimprompt.buttons.okay invoke}
-wm withdraw .irsimprompt
-
 proc GetUserInput {prompt_text default_value action_proc args} {
+  irsim::build_gui
   .irsimprompt.message configure -text $prompt_text
   .irsimprompt.entry delete 0 end
   .irsimprompt.entry insert 0 $default_value
@@ -1067,13 +1081,13 @@ if { $UsingMagic } {
 
 } else {
    # If magic is not active, the command "watchnode" calls "analyzer".
-   proc watchnode {args} {wm deiconify .analyzer; update idletasks; analyzer $args}
+   proc watchnode {args} {irsim::build_gui; wm deiconify .analyzer; update idletasks; analyzer $args}
 
    # The command "watchtime" is meaningless w/o magic, but if it's called,
    # then it is assumed that the analyzer window is expected to pop up.
-   proc watchtime {args} {wm deiconify .analyzer; update idletasks; analyzer}
+   proc watchtime {args} {irsim::build_gui; wm deiconify .analyzer; update idletasks; analyzer}
 
-   if {[string range [wm title .] 0 3] == "wish"} {
+   if {[llength [info commands wm]] && [string range [wm title .] 0 3] == "wish"} {
       wm withdraw .
    }
 

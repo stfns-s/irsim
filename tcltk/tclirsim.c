@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <signal.h>	/* Ctrl-C interrupt handling */
 
 #include <tcl.h>

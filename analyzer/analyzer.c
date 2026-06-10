@@ -138,6 +138,8 @@ public void DisplayTraces( isMapped )
   {
     int  change;
 
+    if (window == 0) return;	/* GUI is built lazily; not ready yet */
+
     DisableInput();
    
     traces.total += numAdded;

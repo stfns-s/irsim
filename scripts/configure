@@ -638,6 +638,7 @@ gr_dflags
 gr_cflags
 DIST_DIR
 cadinstall
+irsim_bin
 programs
 unused
 modules
@@ -2540,6 +2541,8 @@ _ACEOF
 
 ALL_TARGET="standard"
 INSTALL_TARGET="install-irsim"
+
+irsim_bin="irsim"
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -6234,6 +6237,7 @@ if test $usingTcl ; then
   extra_defs="$extra_defs -DTCL_DIR=\\\"\${TCLDIR}\\\""
 else
   programs="$programs irsim"
+  irsim_bin="cirsim"
   unused="$unused tcltk"
 fi
 
@@ -6730,6 +6734,7 @@ fi
 if test "$GCC" = "yes" ; then
    DEPEND_FLAG="-MM"
 fi
+
 
 
 

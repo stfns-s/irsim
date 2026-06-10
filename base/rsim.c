@@ -21,6 +21,10 @@
 
 #ifdef TCL_IRSIM
 #include <tk.h>
+/* Tcl version 9 compatibility */
+#if TCL_MAJOR_VERSION < 9
+typedef int Tcl_Size;
+#endif
 #endif
 
 #include "defs.h"
@@ -316,7 +320,8 @@ private void apply (fun, vfunc, arg)
 
 #ifdef TCL_IRSIM
     /* Check for case in which arguments are passed as a list. */
-    int start, argc;
+    int start;
+    Tcl_Size argc;
     char **argv;
 
     if (targc == applyStart + 1)
@@ -4026,6 +4031,13 @@ private int analyzer()
 	if (!InitDisplay(first_file, (*x_display) ? x_display : NULL))
 	    return(0);
 	InitTimes(sim_time0, stepsize, cur_delta, 1);
+#else
+	/* The Tk GUI is built lazily; building it sets up the	*/
+	/* analyzer's X window via start_analyzer().  Do it now,	*/
+	/* before DisplayTraces() touches the window -- otherwise	*/
+	/* we crash on a NULL display / zero window.			*/
+	if (Tcl_Eval(irsiminterp, "irsim::build_gui") != TCL_OK)
+	    return(-1);
 #endif
     }
 

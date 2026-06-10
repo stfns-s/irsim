@@ -55,6 +55,7 @@ SUB_EXTRA_LIBS	       = @sub_extra_libs@
 MODULES               += @modules@
 UNUSED_MODULES        += @unused@
 PROGRAMS	      += @programs@
+IRSIM_BIN              = @irsim_bin@
 INSTALL_CAD_DIRS      += @cadinstall@
 
 RM                     = rm -f

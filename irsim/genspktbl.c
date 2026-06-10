@@ -49,7 +49,7 @@ double	delaytab[ SPIKETBLSIZE + 1 ][ SPIKETBLSIZE + 1 ];
 FILE	*F;
 
 
-main( argc, argv )
+int main( argc, argv )
   int   argc;
   char  *argv[];
   {

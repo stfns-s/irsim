@@ -19,6 +19,9 @@ dnl Override default target when compiling under TCL
 ALL_TARGET="standard"
 INSTALL_TARGET="install-irsim"
 
+dnl Name of the installed standalone binary (overridden below for non-Tcl)
+irsim_bin="irsim"
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
@@ -807,6 +810,7 @@ if test $usingTcl ; then
   extra_defs="$extra_defs -DTCL_DIR=\\\"\${TCLDIR}\\\""
 else
   programs="$programs irsim"
+  irsim_bin="cirsim"
   unused="$unused tcltk"
 fi
 
@@ -1266,6 +1270,7 @@ AC_SUBST(sub_extra_libs)
 AC_SUBST(modules)
 AC_SUBST(unused)
 AC_SUBST(programs)
+AC_SUBST(irsim_bin)
 AC_SUBST(cadinstall)
 AC_SUBST(DIST_DIR)
 

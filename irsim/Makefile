@@ -25,9 +25,9 @@ tclirsim${SHDLIB_EXT}: ${EXTRA_LIBS}
 	${CC} ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@ ${LDDL_FLAGS} ${LD_RUN_PATH} \
 		${EXTRA_LIBS} -lc ${LIBS} ${LD_EXTRA_LIBS}
 
-$(DESTDIR)${INSTALL_BINDIR}/irsim:
-	${RM} $(DESTDIR)${INSTALL_BINDIR}/irsim
-	${CP} irsim $(DESTDIR)${INSTALL_BINDIR}/irsim
+$(DESTDIR)${INSTALL_BINDIR}/${IRSIM_BIN}:
+	${RM} $(DESTDIR)${INSTALL_BINDIR}/${IRSIM_BIN}
+	${CP} irsim $(DESTDIR)${INSTALL_BINDIR}/${IRSIM_BIN}
 
 $(DESTDIR)${INSTALL_BINDIR}/gentbl:
 	${RM} $(DESTDIR)${INSTALL_BINDIR}/gentbl
@@ -43,7 +43,7 @@ gentbl:
 genspktbl:
 	${CC} ${CFLAGS} ${CPPFLAGS} ${DFLAGS} genspktbl.c -o $@ ${LIBS}
 
-install: $(DESTDIR)${INSTALL_BINDIR}/irsim $(DESTDIR)${INSTALL_BINDIR}/gentbl \
+install: $(DESTDIR)${INSTALL_BINDIR}/${IRSIM_BIN} $(DESTDIR)${INSTALL_BINDIR}/gentbl \
 		$(DESTDIR)${INSTALL_BINDIR}/genspktbl
 
 install-tcl: $(DESTDIR)${INSTALL_TCLDIR}/tclirsim${SHDLIB_EXT}
